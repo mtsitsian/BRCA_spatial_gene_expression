@@ -5,4 +5,3 @@ This is the repository for the code and data produced during the analysis of spa
 
 * [Description of the data](#description) 
 * [Description of the code](#code)
-* [Cite](#cite)

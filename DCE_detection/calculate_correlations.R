@@ -10,7 +10,7 @@ cor.prob <- function (X, dfr = nrow(X) - 2, method = "spearman") {
 
 # Transforms the correlation matrix calculated from the cor.prob function
 flattenSquareMatrix <- function(m) {
-  if( (class(m) != "matrix") | (nrow(m) != ncol(m))) stop("Must be a square matrix.") 
+#  if( (class(m) != "matrix") | (nrow(m) != ncol(m))) stop("Must be a square matrix.") 
   if(!identical(rownames(m), colnames(m))) stop("Row and column names must be equal.")
   ut <- upper.tri(m)
   data.frame(i = as.numeric(rownames(m)[row(m)[ut]]),

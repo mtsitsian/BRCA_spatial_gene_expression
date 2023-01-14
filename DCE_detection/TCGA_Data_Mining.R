@@ -37,7 +37,7 @@ dataPrep <- GDCprepare(query = queryDown, save = TRUE,directory = dir, save.file
 ####################### MINE GENE EXPRESSION DATA WITH THE BARCODES FROM TCGA##########################
 
 
-listsamples <- strsplit(dataSmTP, ",")
+listsamples <- strsplit(c(dataSmTP,dataSmNT), ",")
 
 # Query platform with a list of barcode 
 query <- GDCquery(project = "TCGA-BRCA", 

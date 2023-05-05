@@ -12,4 +12,4 @@ The association of neighbouring genes at the expression level and the subsequent
 
 ## Description of the code<a name="code"></a>
 The analysis has been performed in R. All the code used to define, 
-detect and analyze DCEs can be found inside the [DCE_analysis](https://github.com/mtsitsian/BRCA_spatial_gene_expression/tree/main/DCE_analysis) and the [Dce_detection](https://github.com/mtsitsian/BRCA_spatial_gene_expression/tree/main/DCE_detection) folder.
+detect and analyze DCEs can be found inside the [DCE_analysis](https://github.com/mtsitsian/BRCA_spatial_gene_expression/tree/main/DCE_analysis) and the [DCE_detection](https://github.com/mtsitsian/BRCA_spatial_gene_expression/tree/main/DCE_detection) folder.

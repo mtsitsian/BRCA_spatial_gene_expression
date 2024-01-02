@@ -1,3 +1,5 @@
+#WARNING!! Check the comments in the code above!! You will have to adjust parameters!! (line 40)
+
 ########Find cods with at least 80% overlap########
 find_overlap <- function(group, c_CODS = c_CODs, control_group){
   print(group)
@@ -35,8 +37,8 @@ find_overlap <- function(group, c_CODS = c_CODs, control_group){
   return(overlap)
 }
 
-overlap <- lapply(X = c("LuminalA", "LuminalB", "TNBC", "Her2"), FUN = find_overlap, control_group = c_CODs$Normal)
-names(overlap) <- c("LuminalA", "LuminalB", "TNBC", "Her2")
+overlap <- lapply(X = c("CIN", "EBV", "MSI", "GS"), FUN = find_overlap, control_group = c_CODs$NP) # Don't forget to put your control group in the "control_group" argument!
+names(overlap) <- c("CIN", "EBV", "MSI", "GS")
 lapply(overlap, function(y) sapply(y, function(x)summary(x[, "overlap"])))
 
 N_cods <- function(overlap, threshold){
@@ -71,44 +73,7 @@ P_cods(n_cods_per_chr, overlap, 0.8)
 P_cods(n_cods_per_chr, overlap, 0)
 
 
-########Create randomized CODs########
-randomize_cods <- function(group, coordinates, cods){
-  random_cods <- list()
-  for (chr in names(cods[[group]])){
-    random_cods[[chr]] <- matrix(0,1,2, dimnames = list(NULL, c("START", "END")))
-    x <-  coordinates[coordinates$chromosome == chr,]
-    start <- min(x$start)
-    end <- max(x$end)
-    occupied <- numeric()
-    if (nrow(cods[[group]][[chr]]) > 0){
-      for (i in 1:nrow(cods[[group]][[chr]])){
-        repeat {
-          rstart <-  ceiling(runif(1,start,end))
-          if (!(rstart %in% occupied)){
-            break
-          }
-        }
-        occupied <- c(occupied, rstart:(rstart + (cods[[group]][[chr]][i,2]-cods[[group]][[chr]][i,1])))
-        random_cods[[chr]] <- rbind(random_cods[[chr]], c(rstart , (rstart + (cods[[group]][[chr]][i,2]-cods[[group]][[chr]][i,1]))))
-      }
-      random_cods[[chr]] <- apply(X = random_cods[[chr]],2,sort)
-    }
-    random_cods[[chr]] <- random_cods[[chr]][-1, , drop = F]
-    
-  }
-  return(random_cods)
-}
-random_cods <- lapply(c("Normal", "LuminalA", "LuminalB", "TNBC", "Her2"), randomize_cods, coordinates = coordinates$coordinates, cods = c_CODs)
-names(random_cods) <- c("Normal", "LuminalA", "LuminalB", "TNBC", "Her2")
-overlap_random <-  lapply(X = c("LuminalA", "LuminalB", "TNBC", "Her2"), FUN = find_overlap, c_CODS = random_cods, control_group = c_CODs$Normal)
-names(overlap_random) <- c("LuminalA", "LuminalB", "TNBC", "Her2")
-lapply(overlap_random, function(y) sapply(y, function(x)summary(x[, "overlap"])))
-names(overlap_random) <- c("LuminalA", "LuminalB", "TNBC", "Her2")
-
-
-
-
-########Find and categorize COD rearrangements (split, merge, emerged, depleted, shrinkage, enlargement, displacement, intact, one border altered, both borders altered)########
+########Find and categorize COD rearrangements (split, merge, emerged, depleted, shrinkage, enlargment, displacement, intact, one border altered, both borders altered)########
 find_rearrangements <- function(group, overlap, control_group, c_CODS){
   
   output <- list()
@@ -170,8 +135,8 @@ find_rearrangements <- function(group, overlap, control_group, c_CODS){
   }
   return(output)
 }
-rearrangements <- lapply(c("LuminalA", "LuminalB", "TNBC", "Her2"), find_rearrangements, overlap = overlap, control_group = c_CODs$Normal, c_CODS = c_CODs)
-names(rearrangements) <- c("LuminalA", "LuminalB", "TNBC", "Her2")
+rearrangements <- lapply(c("CIN", "EBV", "MSI", "GS"), find_rearrangements, overlap = overlap, control_group = c_CODs$NP, c_CODS = c_CODs) #change the control_group with your control!
+names(rearrangements) <- c("CIN", "EBV", "MSI", "GS")
 
 
 # recategorize border_shift
@@ -188,7 +153,7 @@ for (group in names(rearrangements)){
     if (nrow(rearrangements[[group]][[chr]][["border_alteration"]]) > 0){
       for (i in 1:nrow(rearrangements[[group]][[chr]][["border_alteration"]])){
         #print(i)
-        size_control <- s_CODs[["Normal"]][
+        size_control <- s_CODs[["NP"]][
           rearrangements[[group]][[chr]][["border_alteration"]][i, "control"]
         ]
         size_test <- s_CODs[[group]][

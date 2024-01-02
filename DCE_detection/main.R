@@ -1,54 +1,81 @@
-########Main script of the COD detection pipeline########
+########Main script of the DCE (COD) detection pipeline########
+###IMPORTANT!!! Start the analysis by installing and loading all the packages in the "install_packages.R" script
+###Continue by downloading and preparing the data via the "TCGA_Data_Mining.R", "Initial filtering.R", and the "data_preparation.R" scripts, they are all located in the DCE_detection folder in the github repo
 
 # load required libraries
-library(parallel)
-library(features)
+library(parallel) #for parallel computation
+library(doParallel) #for parallel computation
+library(features) #for detecting local minima and maxima to detect DCE 
+library(feather) #to save files in a lightweight format
 
-# source all the required functions and prepare the data
-filenames <- c('Initial_filtering.R',
-               'data_preparation.R',
-               'calculate_correlations.R',
-               'permutation_test_for_correlations.R',
-               'compute_binsignal.R',
-               'detect_DCEs.R',
-               'merge_DCEs.R')
+
+# source all the rest required functions and prepare the data
+filenames <- c('scripts/calculate_correlations.R',
+               'scripts/permutation_test_for_correlations.R',
+               'scripts/compute_binsignal.R',
+               'scripts/detect_DCEs.R',
+               'scripts/merge_DCEs.R')
 sapply(filenames, source, echo = T)
 
 # Calculate correlation matrix
 chrs <- unique(bins$chromosome)
 
-cor_final_LuminalA <- calc_cor_final(bin_counts = as.data.frame(bin_counts_LuminalA))
-cor_final_LuminalB <- calc_cor_final(bin_counts = as.data.frame(bin_counts_LuminalB))
-cor_final_Normal <- calc_cor_final(bin_counts = as.data.frame(bin_counts_Normal))
-cor_final_TNBC <- calc_cor_final(bin_counts = as.data.frame(bin_counts_TNBC))
-cor_final_Her2 <- calc_cor_final(bin_counts = as.data.frame(bin_counts_Her2))
+#cor_final_Healthy <- calc_cor_final(bin_counts = bin_counts_Healthy)
+cor_final_NP <- calc_cor_final(bin_counts = bin_counts_NP)
+cor_final_CIN <- calc_cor_final(bin_counts = bin_counts_CIN)
+cor_final_EBV <- calc_cor_final(bin_counts = bin_counts_EBV)
+cor_final_MSI <- calc_cor_final(bin_counts = bin_counts_MSI)
+cor_final_GS <- calc_cor_final(bin_counts = bin_counts_GS)
+
+############Extract the correlation matrices to your working directory to use them for the plotgardener heatmaps#################
+
+# write_feather(cor_final_NP, "cor_final_NP.feather")
+# read_feather("cor_final_NP.feather")
+
+dir.create("correlation_matrices")
+write_feather(cor_final_pretreat, "correlation_matrices/cor_final_pretreat.feather")
+write_feather(cor_final_cy6, "correlation_matrices/cor_final_cy6.feather")
+
+
 
 # Calculate permutation scores
+#WARNING!!!! This script is made for windows OS!!! 
+#For parallel computing in linux OS, use the parameter "mc.cores = 4" to make the analysis quicker, like the example below
+
+#EXAMPLE FOR LINUX OS
+#system.time(
+#  permutation_scores_Healthy <- mclapply(X = chrs, FUN = permutations, n_of_permutations = 1000, correlation = cor,
+#                                         bin_counts = bin_counts_Healthy, cor_final = cor_final_Healthy, mc.cores = 4)
+#)
+
+#EXAMPLE FOR WINDOWS OS, THE PERMUTATION NUMBER OUTPUT DOES NOT GET PRINTED BUT IT IS SIGNIFICANTLY FASTER!!!
+# Set the number of cores to be used
+num_cores <- 4
+
+# Initialize the parallel backend
+cl <- makeCluster(num_cores)
+
+# Register the parallel backend
+registerDoParallel(cl)
+
+# Run the parallel computation
 system.time(
-  permutation_scores_LuminalA <- mclapply(X = chrs, FUN = permutations, n_of_permutations = 1000, correlation = cor,
-                                          bin_counts = bin_counts_LuminalA, cor_final = cor_final_LuminalA)
+  permutation_scores_pretreat <- foreach(chr = chrs) %dopar% {
+    permutations(chr, n_of_permutations = 1000, correlation = cor, bin_counts = bin_counts_pretreat, cor_final = cor_final_pretreat)
+  }
 )
 
-
+save.image("C:/Users/geots/OneDrive/Desktop/CG^2/CML/cd4/cd4_CMML_data.RData")
 system.time(
-  permutation_scores_LuminalB <- mclapply(X = chrs, FUN = permutations, n_of_permutations = 1000, correlation = cor,
-                                          bin_counts = bin_counts_LuminalB, cor_final = cor_final_LuminalB)
+  permutation_scores_cy6 <- foreach(chr = chrs) %dopar% {
+    permutations(chr, n_of_permutations = 1000, correlation = cor, bin_counts = bin_counts_cy6, cor_final = cor_final_cy6)
+  }
 )
+save.image("C:/Users/geots/OneDrive/Desktop/CG^2/CML/cd4/cd4_CMML_data.RData")
 
-system.time(
-  permutation_scores_Normal <- mclapply(X = chrs, FUN = permutations, n_of_permutations = 1000, correlation = cor,
-                                        bin_counts = bin_counts_Normal, cor_final = cor_final_Normal)
-)
 
-system.time(
-  permutation_scores_TNBC <- mclapply(X = chrs, FUN = permutations, n_of_permutations = 1000, correlation = cor,
-                                      bin_counts = bin_counts_TNBC, cor_final = cor_final_TNBC)
-)
-
-system.time(
-  permutation_scores_Her2 <- mclapply(X = chrs, FUN = permutations, n_of_permutations = 1000, correlation = cor,
-                                      bin_counts = bin_counts_Her2, cor_final = cor_final_Her2)
-)
+# Stop the parallel backend
+stopCluster(cl)
 
 
 
@@ -84,7 +111,9 @@ test_for_window <- function(windows, chr, group){
   intra_cod <- list()
   for (w in windows){
     print(w)
-    cods <- codfinder(chr = chr, group = group, window.size = w, bin_signal_thres = 0.1530351,
+    cods <- codfinder(chr = chr, group = group, 
+                      window.size = w, 
+                      bin_signal_thres = 0.06798727, #Bin signal threshhold is the average binsignal of the control group! Don't forget to change that value! Read below!
                       perm_pvalue_thres = 0.05)
     cods <- cods$CODs
     cods <- cod_merge(cods, interfere = 2, group = group, chr = chr, permut_thres = 0.05)
@@ -93,17 +122,14 @@ test_for_window <- function(windows, chr, group){
   return(intra_cod)
 }
 
-check_w <- test_for_window(3:20, "chr1", "Normal")
+check_w <- test_for_window(3:19, "chr1", "pretreat")
 str(check_w)
 sapply(check_w, function(x) length(x))
 sapply(check_w, function(x) summary(x))
 
 
-#exclude chrY from the analysis due to breast cancer occurrence in women 
-
-chrs_noY <- chrs[! chrs  %in% c('chrY')]
-
 # Find CODs for all chrs and all groups
+#run the the make_cod_list function for the control group to find the average bin_signal and use it as the bin signal threshold (RUN THE FUNCTION AGAIN)
 
 bin_signals <- list()
 CODs <- list()
@@ -114,7 +140,8 @@ make_COD_list <- function(group, window.size, chrs){
   bin_signals[[group]] <- list()
   for (chr in chrs){
     print(chr)
-    c <- codfinder(chr, group, window.size, bin_signal_thres = 0.1530351,
+    c <- codfinder(chr, group, window.size, 
+                   bin_signal_thres = 	0.06798727, #Bin signal threshhold is the average binsignal of the control group! Don't forget to change that value! Read below!
                    perm_pvalue_thres = 0.05)
     cods[[chr]] <- c$CODs
     bin_signals[[group]][[chr]] <- c$bin_signal
@@ -122,7 +149,7 @@ make_COD_list <- function(group, window.size, chrs){
   assign('bin_signals', value = bin_signals, envir = .GlobalEnv)
   cods
 }
-CODs[['LuminalA']] <- make_COD_list('LuminalA', 3, chrs_noY)
+#CODs[['Healthy']] <- make_COD_list('Healthy', 3, chrs)
 
 ## Merge cods with a gap of at most two bins between them
 merge_cods <- function(cod_list, group){
@@ -132,19 +159,33 @@ merge_cods <- function(cod_list, group){
   }
   cod_list
 }
-CODs$LuminalA <- merge_cods(CODs$LuminalA, 'LuminalA')
+#CODs$Healthy <- merge_cods(CODs$Healthy, 'Healthy')
 
-CODs[['LuminalB']] <- make_COD_list('LuminalB', 3, chrs_noY)
-CODs$LuminalB <- merge_cods(CODs$LuminalB, 'LuminalB')
 
-CODs[['Normal']] <- make_COD_list('Normal', 3, chrs_noY)
-CODs$Normal <- merge_cods(CODs$Normal, 'Normal')
+#Run the make_COD_list script for the rest of the subtypes in the analysis
+CODs[['pretreat']] <- make_COD_list('pretreat', 3, chrs)
+CODs$pretreat <- merge_cods(CODs$pretreat, 'pretreat')
 
-CODs[['TNBC']] <- make_COD_list('TNBC', 3, chrs_noY)
-CODs$TNBC <- merge_cods(CODs$TNBC, 'TNBC')
+CODs[['cy6']] <- make_COD_list('cy6', 3, chrs)
+CODs$cy6 <- merge_cods(CODs$cy6, 'cy6')
 
-CODs[['Her2']] <- make_COD_list('Her2', 3, chrs_noY)
-CODs$Her2 <- merge_cods(CODs$Her2, 'Her2')
+
+
+########Average Binsignal########
+#calculate the average binsignal for the control group with the script below (in the functions above, the control group is called "Healthy", just for demonstration purposes, as a comment)
+#Then, run the previous scripts again (test_for_window and make_COD_list), this time by changing the "bin_signal_thres" argument to the average binsignal value for the control
+
+average_binsignal <- 
+  apply(X = sapply(bin_signals, function(x) sapply(x, function(y) mean(y[,1]))), 
+        MARGIN = 2, 
+        FUN = mean)
+
+average_binsignal %<>% 
+  as.data.frame %>% 
+  rownames_to_column('group')
+colnames(average_binsignal)[2] <- "Average_binsignal"
+average_binsignal$group <- factor(average_binsignal$group, levels = c("pretreat", "cy6"))
+
 
 ## Find the cod coordinates
 coCODs <- function(cods){
@@ -154,6 +195,7 @@ coCODs <- function(cods){
     for (chr in names(cods[[1]])){
       c_CODs[[group]][[chr]] <- matrix(0, nrow(cods[[group]][[chr]]), ncol(cods[[group]][[chr]]), dimnames = list(NULL, c("START", "END")))
       bin_starts <- bin_starts <- as.numeric(rownames(bin_signals[[group]][[chr]]))
+      
       c_CODs[[group]][[chr]][,"START"] <- bin_starts[cods[[group]][[chr]][,"START"]]
       c_CODs[[group]][[chr]][,"END"] <- bin_starts[cods[[group]][[chr]][,"END"]]+9999
     }
@@ -161,8 +203,3 @@ coCODs <- function(cods){
   return(c_CODs)
 } #find the cod coordinates
 c_CODs <- coCODs(CODs)
-
-
-
-
-#end of code

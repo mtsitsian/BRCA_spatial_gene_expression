@@ -40,6 +40,7 @@ data_CIN <- data_normalized[,which(colnames(data_normalized) == "CIN")]
 data_EBV <- data_normalized[,which(colnames(data_normalized) == "EBV")]
 data_GS <- data_normalized[,which(colnames(data_normalized) == "GS")]
 data_MSI <- data_normalized[,which(colnames(data_normalized) == "MSI")]
+#data_NP <- data_normalized %>% select(matches("NP")) works in the latest versions of R
 
 
 #reverse coordinates for genes of '-' strand

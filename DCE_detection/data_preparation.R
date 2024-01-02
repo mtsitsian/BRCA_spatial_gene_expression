@@ -59,6 +59,7 @@ coordinates$coordinates <- reverse_coordinates(coordinates$coordinates)
 
 
 library(parallel)
+library(BiocParallel)
 #This function requires the bins data.frame produced by the calc_bins, the coordinates data.frame produced by the find_coordinates,
 #the data matrix, containing the normalized counts and the gene_names as its rownames,
 #the index of the row (refering the bins data.frame) of the last bin needed to calculate its counts and the number of cores to be utilized (it implements parallel computing - requires the parallel package).
@@ -77,7 +78,7 @@ find_bin_counts <- function(bins, data, gene_coordinates, lastbin = nrow(bins)){
     }
     return(counts)
   }
-  bin_counts <- mclapply(X = 1:lastbin, FUN = assign_counts, bins = bins, data = data, gene_coordinates = gene_coordinates)
+  bin_counts <- bplapply(X = 1:lastbin, FUN = assign_counts, bins = bins, data = data, gene_coordinates = gene_coordinates) #for linux, use "mclapply" instead of "bplapply"
   bin_counts <- matrix(data = unlist(bin_counts, use.names = F), byrow = T, nrow = length(bin_counts), ncol = ncol(data))
   colnames(bin_counts) <- colnames(data)
   return(bin_counts)

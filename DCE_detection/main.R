@@ -33,8 +33,12 @@ cor_final_GS <- calc_cor_final(bin_counts = bin_counts_GS)
 # read_feather("cor_final_NP.feather")
 
 dir.create("correlation_matrices")
-write_feather(cor_final_pretreat, "correlation_matrices/cor_final_pretreat.feather")
-write_feather(cor_final_cy6, "correlation_matrices/cor_final_cy6.feather")
+
+write_feather(cor_final_NP, "cor_final_NP.feather")
+write_feather(cor_final_EBV, "cor_final_EBV.feather")
+write_feather(cor_final_CIN, "cor_final_CIN.feather")
+write_feather(cor_final_MSI, "cor_final_MSI.feather")
+write_feather(cor_final_GS, "cor_final_GS.feather")
 
 
 
@@ -59,19 +63,38 @@ cl <- makeCluster(num_cores)
 registerDoParallel(cl)
 
 # Run the parallel computation
+# Run the parallel computation
 system.time(
-  permutation_scores_pretreat <- foreach(chr = chrs) %dopar% {
-    permutations(chr, n_of_permutations = 1000, correlation = cor, bin_counts = bin_counts_pretreat, cor_final = cor_final_pretreat)
+  permutation_scores_NP <- foreach(chr = chrs) %dopar% {
+    permutations(chr, n_of_permutations = 1000, correlation = cor, bin_counts = bin_counts_NP, cor_final = cor_final_NP)
   }
 )
 
-save.image("C:/Users/geots/OneDrive/Desktop/CG^2/CML/cd4/cd4_CMML_data.RData")
+
 system.time(
-  permutation_scores_cy6 <- foreach(chr = chrs) %dopar% {
-    permutations(chr, n_of_permutations = 1000, correlation = cor, bin_counts = bin_counts_cy6, cor_final = cor_final_cy6)
+  permutation_scores_CIN <- foreach(chr = chrs) %dopar% {
+    permutations(chr, n_of_permutations = 1000, correlation = cor, bin_counts = bin_counts_CIN, cor_final = cor_final_CIN)
   }
 )
-save.image("C:/Users/geots/OneDrive/Desktop/CG^2/CML/cd4/cd4_CMML_data.RData")
+
+system.time(
+  permutation_scores_EBV <- foreach(chr = chrs) %dopar% {
+    permutations(chr, n_of_permutations = 1000, correlation = cor, bin_counts = bin_counts_EBV, cor_final = cor_final_EBV)
+  }
+)
+
+system.time(
+  permutation_scores_MSI <- foreach(chr = chrs) %dopar% {
+    permutations(chr, n_of_permutations = 1000, correlation = cor, bin_counts = bin_counts_MSI, cor_final = cor_final_MSI)
+  }
+)
+
+
+system.time(
+  permutation_scores_GS <- foreach(chr = chrs) %dopar% {
+    permutations(chr, n_of_permutations = 1000, correlation = cor, bin_counts = bin_counts_GS, cor_final = cor_final_GS)
+  }
+)
 
 
 # Stop the parallel backend
@@ -163,13 +186,20 @@ merge_cods <- function(cod_list, group){
 
 
 #Run the make_COD_list script for the rest of the subtypes in the analysis
-CODs[['pretreat']] <- make_COD_list('pretreat', 3, chrs)
-CODs$pretreat <- merge_cods(CODs$pretreat, 'pretreat')
+CODs[['NP']] <- make_COD_list('NP', 3, chrs)
+CODs$NP <- merge_cods(CODs$NP, 'NP')
 
-CODs[['cy6']] <- make_COD_list('cy6', 3, chrs)
-CODs$cy6 <- merge_cods(CODs$cy6, 'cy6')
+CODs[['CIN']] <- make_COD_list('CIN', 3, chrs)
+CODs$CIN <- merge_cods(CODs$CIN, 'CIN')
 
+CODs[['EBV']] <- make_COD_list('EBV', 3, chrs)
+CODs$EBV <- merge_cods(CODs$EBV, 'EBV')
 
+CODs[['MSI']] <- make_COD_list('MSI', 3, chrs)
+CODs$MSI <- merge_cods(CODs$MSI, 'MSI')
+
+CODs[['GS']] <- make_COD_list('GS', 3, chrs)
+CODs$GS <- merge_cods(CODs$GS, 'GS')
 
 ########Average Binsignal########
 #calculate the average binsignal for the control group with the script below (in the functions above, the control group is called "Healthy", just for demonstration purposes, as a comment)

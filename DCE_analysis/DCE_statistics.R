@@ -39,7 +39,7 @@ no_non_zero_bins <- function(groups, chrs){
   }
   return(n_bins)
 }
-no_nz_bins <- no_non_zero_bins(c("Normal", "LuminalA", "LuminalB", "TNBC", "Her2"), chrs = chrs_noY)
+no_nz_bins <- no_non_zero_bins(c("NP", "CIN", "EBV", "MSI", "GS"), chrs = chrs)
 percentages <- function(groups, chrs, n_bins, no_nz_bins){
   perc <- matrix(0,1,length(chrs))
   for (group in groups){
@@ -49,7 +49,7 @@ percentages <- function(groups, chrs, n_bins, no_nz_bins){
   dimnames(perc)<- list(groups, chrs)
   return(perc)
 }
-perc <- percentages(groups = c("Normal", "LuminalA", "LuminalB", "TNBC", "Her2"), chrs_noY , n_bins, no_nz_bins)
+perc <- percentages(groups = c("NP", "CIN", "EBV", "MSI", "GS"), chrs, n_bins, no_nz_bins)
 
 
 ########Size of CODs########
@@ -67,14 +67,13 @@ soCODs <- function(cods){
 s_CODs <- soCODs(CODs)
 sapply(s_CODs, function(x)summary(unlist(x, use.names = F)))
 s_CODs <- lapply(s_CODs, unlist, use.names = F)
-s_CODs <- lapply(s_CODs, function(x)x/1000000)
-s_CODs1 <- data.frame(size =c(s_CODs$Normal, s_CODs$LuminalA, s_CODs$LuminalB, s_CODs$TNBC, s_CODs$Her2), 
-                      group = c(rep("Normal", length(s_CODs$Normal)), rep("LuminalA", length(s_CODs$LuminalA)), 
-                                rep("LuminalB", length(s_CODs$LuminalB)), rep("TNBC", length(s_CODs$TNBC)),
-                                rep("Her2", length(s_CODs$Her2))))
+s_CODs <- lapply(s_CODs, function(x) log10(x))
+s_CODs1 <- data.frame(size =c(s_CODs$NP, s_CODs$EBV, s_CODs$CIN,  s_CODs$MSI, s_CODs$GS), 
+                      group = c(rep("NP", length(s_CODs$NP)), 
+                                rep("EBV", length(s_CODs$EBV)), rep("CIN", length(s_CODs$CIN)), 
+                                rep("MSI", length(s_CODs$MSI)), rep("GS", length(s_CODs$GS))))
 
 ########Find intra cod coexpression########
-
 
 compute_intra_cod_coexp <- function(cods, thres = 0.05){
   intra_cod <- list()
@@ -90,6 +89,7 @@ compute_intra_cod_coexp <- function(cods, thres = 0.05){
       n <- sum(bins$chromosome == chr & z > 0)
       nam <- as.character(bins$start[which(bins$chromosome == chr & z > 0)])
       rm(bin_counts, z)
+      
       
       x <- xfeth[xfeth$chrom == chr,]
       
@@ -111,7 +111,7 @@ compute_intra_cod_coexp <- function(cods, thres = 0.05){
       
       intra_cod[[group]][[chr]] <- numeric(length(nrow(codss)))
       if (nrow(codss) >= 1){
-        for (i in seq_along(nrow(codss))){
+        for (i in 1:nrow(codss)){
           cod <- map[codss[i,"START"]:codss[i,"END"], codss[i,"START"]:codss[i,"END"]]
           intra_cod[[group]][[chr]][i] <- mean(cod[upper.tri(cod)])
         }
@@ -121,12 +121,10 @@ compute_intra_cod_coexp <- function(cods, thres = 0.05){
   return(intra_cod)
 }
 
-
 intra_cod <- compute_intra_cod_coexp(CODs)
 sapply(intra_cod, function(x)summary(unlist(x, use.names = F)))
 
 ########Find inter cod coexpression########
-
 
 compute_inter_cod_coexp <- function(cods, thres = 0.05){
   inter_cod <- list()
@@ -166,7 +164,7 @@ compute_inter_cod_coexp <- function(cods, thres = 0.05){
       if (nrow(codss) > 1){
         combinations <- combn(1:nrow(codss), 2)
         inter_cod[[group]][[chr]] <- numeric(length(ncol(combinations)))
-        for (i in seq_along(ncol(combinations))){
+        for (i in 1:ncol(combinations)){
           cod <- map[codss[combinations[1,i],"START"]:codss[combinations[1,i],"END"], 
                      codss[combinations[2,i],"START"]:codss[combinations[2,i],"END"]]
           inter_cod[[group]][[chr]][i] <- mean(cod)

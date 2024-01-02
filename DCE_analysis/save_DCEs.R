@@ -45,10 +45,10 @@ unify <- function(x){
 }
 
 #use the control group as an example (here, the control group is NP)
-head(unify(c_CODs$pretreat))
+head(unify(c_CODs$NP))
 cods <- lapply(c_CODs, unify)
 summary(cods)
-head(cods$cy6)
+head(cods$CIN)
 
 
 

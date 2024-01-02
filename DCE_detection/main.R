@@ -214,7 +214,7 @@ average_binsignal %<>%
   as.data.frame %>% 
   rownames_to_column('group')
 colnames(average_binsignal)[2] <- "Average_binsignal"
-average_binsignal$group <- factor(average_binsignal$group, levels = c("pretreat", "cy6"))
+average_binsignal$group <- factor(average_binsignal$group, levels = c("NP", "EBV", "CIN", "MSI", "GS"))
 
 
 ## Find the cod coordinates

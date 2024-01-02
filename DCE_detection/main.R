@@ -145,11 +145,15 @@ test_for_window <- function(windows, chr, group){
   return(intra_cod)
 }
 
-check_w <- test_for_window(3:19, "chr1", "pretreat")
+check_w <- test_for_window(3:20, "chr1", "Heallthy")
 str(check_w)
 sapply(check_w, function(x) length(x))
 sapply(check_w, function(x) summary(x))
 
+#plot the boxplot results, the plateau is 3, so it should be higher than the rest
+ggplot(average_binsignal, aes(x = group, y = Average_binsignal), fill = group) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  scale_fill_grey()       
 
 # Find CODs for all chrs and all groups
 #run the the make_cod_list function for the control group to find the average bin_signal and use it as the bin signal threshold (RUN THE FUNCTION AGAIN)
